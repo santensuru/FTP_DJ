@@ -1,0 +1,14 @@
+<XML: FTP_DJ>
+    <SETTING>
+        <DIRECTORY> /home/user/coba/FTP/ </DIRECTORY>
+    </SETTING>
+    
+    <USERS>
+        <USER> djuned
+            <PASSWORD> haha </PASSWORD>
+        </USER>
+        <USER> share
+            <PASSWORD> share </PASSWORD>
+        </USER>
+    </USERS>
+</XML>
