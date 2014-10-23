@@ -311,11 +311,12 @@ int download(char *name, int sockcli) {
         return -1;
 
     do {
-        buf_size = read(fd, buf, 4096);
+        /* binaries */
+        buf_size = read(fd, &buf[0], 4096);
         //buf[buf_size] = '\0';
         //puts(buf);
         if (buf_size > 0) {
-            int s = write(sockcli, buf, buf_size);
+            int s = write(sockcli, &buf[0], buf_size);
             //printf("%d\n", s);
             //printf("\n%d", buf_size);
             //fflush(stdout);
@@ -349,15 +350,18 @@ int upload(char *name, int sockcli) {
         sprintf(msg, "Enter file after this: ....\r\n");
         write(sockcli, msg, strlen(msg));
         
-        memset(msg, 0, sizeof(msg[4096]));
+        //memset(msg, 0, sizeof(msg[4096]));
         
+        int retval;
         do {
             fflush(stdin);
-            int retval = read(sockcli, buf, sizeof(buf)-1);
-            buf[retval] = '\0';
-            strcat(msg, buf);
-        } while (strstr(msg, "\r\n\r\n") == NULL);
-        write(fd, msg, strlen(msg)-2);
+            /* binaries */
+            retval = read(sockcli, &buf[0], 4096);
+            write(fd, &buf[0], retval);
+            //buf[retval] = '\0';
+            //memcpy((void *)&msg[0], (const void *)&buf[0], retval); //strcat(msg, buf);
+        } while (retval > 0); //while (strstr(msg, "\r\n\r\n") == NULL);
+        //write(fd, msg, strlen(msg)-2);
 
     close(fd);
     return 3;
@@ -452,7 +456,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.1 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
