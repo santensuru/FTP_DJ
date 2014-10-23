@@ -15,7 +15,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
-//#include <netinet/in.h>
+#include <netinet/in.h>
 
 int len_root = 20;
 char dir_root[1024] = "/home/user/coba/FTP/";
@@ -385,7 +385,7 @@ int main() {
     }
     
     int sockfd = 0, sockfd_data = 0, sockcli = 0, sockcli_data = 0;
-    int retval = 0, clisize = 0, clisize_data = 0;
+    int retval = 0;
     struct sockaddr_in servaddr, servaddr_data, cliaddr, cliaddr_data;
     
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -422,12 +422,25 @@ int main() {
     
     memset(&cliaddr, 0, sizeof(cliaddr));
     memset(&cliaddr_data, 0, sizeof(cliaddr_data));
+    socklen_t clisize = sizeof(cliaddr), clisize_data = sizeof(cliaddr_data);
     //clisize = 0;
     //clisize_data = 0;
      
     sockcli = accept(sockfd, (struct sockaddr*)&cliaddr , &clisize);
     
-    printf("Ada klien masuk dari %s\n", inet_ntoa(cliaddr.sin_addr));
+    printf("Ada klien masuk dari %s %d\n", inet_ntoa(cliaddr.sin_addr), (int) ntohs(cliaddr.sin_port));
+    
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(cliaddr.sin_addr), str, INET_ADDRSTRLEN);
+    printf("%s\n", str);
+    
+    struct sockaddr_in localAddress;
+    socklen_t addressLength = sizeof(localAddress);
+    getsockname(sockcli, (struct sockaddr*)&localAddress, &addressLength);
+    char ip_active[16];
+    strcpy(ip_active, inet_ntoa( localAddress.sin_addr));
+    printf("local address: %s\n", ip_active);
+    printf("local port: %d\n", (int) ntohs(localAddress.sin_port));
     
     if (sockcli < 0) {
         perror(strerror(errno));
@@ -456,7 +469,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -513,10 +526,8 @@ int main() {
         
         else if (strstr(msg, "PASV") != NULL) {
             if (login) {
-                char *ip;
-                ip = inet_ntoa(servaddr.sin_addr);
                 char ip_i[4][4];
-                sscanf(ip, "%[^.].%[^.].%[^.].%s", ip_i[0], ip_i[1], ip_i[2], ip_i[3]);
+                sscanf(ip_active, "%[^.].%[^.].%[^.].%s", ip_i[0], ip_i[1], ip_i[2], ip_i[3]);
                 sprintf(msg_send, "200 Entering Passive Mode (%s,%s,%s,%s,23,171)\r\n", ip_i[0], ip_i[1], ip_i[2], ip_i[3]);
                 //retval = listen(sockfd_data, 5);
                 //sockcli_data = accept(sockfd_data, (struct sockaddr*)&cliaddr_data , &clisize_data);
