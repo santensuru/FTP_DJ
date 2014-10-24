@@ -114,8 +114,8 @@ void get_user(char *user, char *pass) {
 int list(int sockcli) { // char *ls
     DIR * d;
     //char * dir_name = "/home/user/coba/FTP/";
-    char ls[4096];
-    memset(ls, 0, sizeof(ls[4096]));
+    char ls[512];
+    //memset(ls, 0, sizeof(ls[4096]));
     /* Open the current directory. */
 
     d = opendir (dir_root);
@@ -157,6 +157,8 @@ int list(int sockcli) { // char *ls
             exit(-1);
         }
         else {
+            strcpy(ls, "");
+            
             strcat(ls, ( S_ISDIR(fileStat.st_mode)) ? "d" : "-");
             strcat(ls, (fileStat.st_mode & S_IRUSR) ? "r" : "-");
             strcat(ls, (fileStat.st_mode & S_IWUSR) ? "w" : "-");
@@ -210,11 +212,12 @@ int list(int sockcli) { // char *ls
         strcat(ls, entry->d_name);
         strcat(ls, "\r\n");
         
-        
+        // send to recivier
+        write(sockcli, ls, strlen(ls));
     }
     
-    // send to recivier
-    write(sockcli, ls, strlen(ls));
+    //// send to recivier
+    //write(sockcli, ls, strlen(ls));
     
     /* Close the directory. */
     if (closedir (d)) {
@@ -329,7 +332,7 @@ int download(char *name, int sockcli) {
 
 int upload(char *name, int sockcli) {
     int fd, buf_size;
-    char buf[2], msg[4096];
+    char buf[1], msg[128];
     char str_name[128];
     strcpy(str_name, dir_root);
     strcat(str_name, name);
@@ -346,8 +349,8 @@ int upload(char *name, int sockcli) {
         }
     } while (buf_size > 0);*/
     
-        memset(msg, 0, sizeof(msg[4096]));
-        sprintf(msg, "Enter file after this: ....\r\n");
+        //memset(msg, 0, sizeof(msg[4096]));
+        strcpy(msg, "Enter file after this: ....\r\n");
         write(sockcli, msg, strlen(msg));
         
         //memset(msg, 0, sizeof(msg[4096]));
@@ -356,8 +359,9 @@ int upload(char *name, int sockcli) {
         do {
             fflush(stdin);
             /* binaries */
-            retval = read(sockcli, &buf[0], 4096);
+            retval = read(sockcli, &buf[0], 1);
             write(fd, &buf[0], retval);
+            //printf("%d", retval);
             //buf[retval] = '\0';
             //memcpy((void *)&msg[0], (const void *)&buf[0], retval); //strcat(msg, buf);
         } while (retval > 0); //while (strstr(msg, "\r\n\r\n") == NULL);
@@ -469,7 +473,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
