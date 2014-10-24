@@ -393,27 +393,14 @@ int main() {
     struct sockaddr_in servaddr, servaddr_data, cliaddr, cliaddr_data;
     
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    sockfd_data = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     
     memset(&servaddr, 0, sizeof(servaddr));
-    memset(&servaddr_data, 0, sizeof(servaddr_data));
     
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(6060);
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    
-    servaddr_data.sin_family = AF_INET;
-    servaddr_data.sin_port = htons(6059);
-    servaddr_data.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);   
     
     retval = bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    
-    if (retval <0) {
-        perror(strerror(errno));
-        exit(-1);
-    }
-    
-    retval = bind(sockfd_data, (const struct sockaddr *)&servaddr_data, sizeof(servaddr_data));
     
     if (retval <0) {
         perror(strerror(errno));
@@ -473,7 +460,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2c beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -530,9 +517,35 @@ int main() {
         
         else if (strstr(msg, "PASV") != NULL) {
             if (login) {
+                sockfd_data = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+                memset(&servaddr_data, 0, sizeof(servaddr_data));
+                
+                servaddr_data.sin_family = AF_INET;
+                servaddr_data.sin_port = htons(0);
+                servaddr_data.sin_addr.s_addr = htonl(INADDR_ANY); 
+                
+                retval = bind(sockfd_data, (const struct sockaddr *)&servaddr_data, sizeof(servaddr_data));
+                
+                if (retval <0) {
+                    perror(strerror(errno));
+                    exit(-1);
+                }
+                
+                struct sockaddr_in sin;
+                socklen_t len = sizeof(sin);
+                if (getsockname(sockfd_data, (struct sockaddr *)&sin, &len) == -1)
+                    perror("getsockname");
+                else
+                    printf("port number %d\n", ntohs(sin.sin_port));
+                
+                int port_active = ntohs(sin.sin_port);
+                int port_i[2];
+                port_i[0] = port_active/256;
+                port_i[1] = port_active%256;
+                
                 char ip_i[4][4];
                 sscanf(ip_active, "%[^.].%[^.].%[^.].%s", ip_i[0], ip_i[1], ip_i[2], ip_i[3]);
-                sprintf(msg_send, "200 Entering Passive Mode (%s,%s,%s,%s,23,171)\r\n", ip_i[0], ip_i[1], ip_i[2], ip_i[3]);
+                sprintf(msg_send, "200 Entering Passive Mode (%s,%s,%s,%s,%d,%d)\r\n", ip_i[0], ip_i[1], ip_i[2], ip_i[3], port_i[0], port_i[1]);
                 //retval = listen(sockfd_data, 5);
                 //sockcli_data = accept(sockfd_data, (struct sockaddr*)&cliaddr_data , &clisize_data);
                 
@@ -625,6 +638,8 @@ int main() {
                 }
                 else {
                     sprintf(msg_send, "150 Connection accepted\r\n");
+                    write(sockcli, msg_send, strlen(msg_send));
+                    fflush(stdout);
                     int s = download(comment, sockcli_data);
                     if (s < 0) {
                         sprintf(msg_send, "551 The server had trouble reading the file from disk.\r\n");
@@ -668,6 +683,8 @@ int main() {
                 }
                 else {
                     sprintf(msg_send, "150 Connection accepted\r\n");
+                    write(sockcli, msg_send, strlen(msg_send));
+                    fflush(stdout);
                     int s = upload(comment, sockcli_data);
                     if (s < 0) {
                         sprintf(msg_send, "551 The server had trouble writing the file from disk.\r\n");
