@@ -460,7 +460,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2c beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2d beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -752,10 +752,10 @@ int main() {
                 }
                 error = 0;
             }
-            //else if (port == 0 && error == 0) {
-            //    sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
-            //    error+=2;
-            //}
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
             else if (error == 1) {
                 sprintf(msg_send, "501 Syntax error\r\n");
                 error++;
@@ -770,10 +770,10 @@ int main() {
                 sprintf(msg_send, "257 \"%s\" is current directory.\r\n", dir_home);
                 error = 0;
             }
-            //else if (port == 0 && error == 0) {
-            //    sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
-            //    error+=2;
-            //}
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
             else if (error == 1) {
                 sprintf(msg_send, "501 Syntax error\r\n");
                 error++;
