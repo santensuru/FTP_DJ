@@ -466,7 +466,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.3 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.3a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -637,7 +637,7 @@ int main() {
         
         else if (strstr(msg, "RETR") != NULL) {
             if (login && error == 0 && port) {
-                sscanf(msg, "RETR %s", comment);
+                sscanf(msg, "RETR %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 //retval = listen(sockfd_data, 5);
                 //sockcli_data = accept(sockfd_data, (struct sockaddr*)&cliaddr_data , &clisize_data);
@@ -683,7 +683,7 @@ int main() {
         
         else if (strstr(msg, "STOR") != NULL) {
             if (login && error == 0 && port) {
-                sscanf(msg, "STOR %s", comment);
+                sscanf(msg, "STOR %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 //retval = listen(sockfd_data, 5);
                 //sockcli_data = accept(sockfd_data, (struct sockaddr*)&cliaddr_data , &clisize_data);
@@ -727,8 +727,8 @@ int main() {
         }
         
         else if (strstr(msg, "DELE") != NULL) {
-            if (login && error == 0 && port) {
-                sscanf(msg, "DELE %s", comment);
+            if (login && error == 0) {
+                sscanf(msg, "DELE %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 int s = del(comment);
                 if (s < 0) {
@@ -739,7 +739,7 @@ int main() {
                 }
                 error = 0;
             }
-            else if (port == 0 && error == 0) {
+            else if (login == 0 && error == 0) {
                 sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
                 error+=2;
             }
