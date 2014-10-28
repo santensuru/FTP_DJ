@@ -235,9 +235,13 @@ int dir(char *ls) {
     char temp[4096];
     
     strcpy(temp, dir_root);
+    //printf("coba --> ");puts(temp);
+    if (ls[strlen(ls)-1] != '/')
+    strcat(ls, "/");
     int t = 0;
     
     while (strstr(ls, "../")) {
+        puts(ls);
         int i;
         int x = strlen(ls);
         for (i=3; i<x; i++) {
@@ -259,13 +263,15 @@ int dir(char *ls) {
     
     if (t == 0) {
         //puts(temp);
-        strcat(ls, "/");
+        //strcat(ls, "/");
         strcat(temp, ls);
     }
     else if (t == 2) {
         //puts(temp);
         strcat(temp, ls);
     }
+    
+    //printf("coba --> ");puts(temp);
     
     /* Open the current directory. */
 
@@ -460,7 +466,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2e beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.3 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -790,11 +796,42 @@ int main() {
             }
         }
         
+        else if (strstr(msg, "TYPE") != NULL) {
+            if (login && error == 0) {
+                sscanf(msg, "TYPE %[^\r\n]", comment);
+                printf("%s\n", comment);
+                if (strcmp(comment, "L 8") == 0) {
+                    sprintf(msg_send, "200 TYPE set to L 8\r\n");
+                }
+                else if (strcmp(comment, "I") == 0) {
+                    sprintf(msg_send, "200 TYPE set to I\r\n");
+                }
+                else if (strcmp(comment, "A") == 0) {
+                    sprintf(msg_send, "200 TYPE set to A\r\n");
+                }
+                else{
+                    sprintf(msg_send, "501 Unsupported type. Supported types are A, I, L 8\r\n");
+                }
+                error = 0;
+            }
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
         else if (strstr(msg, "HELP") != NULL) {
             sprintf(msg_send, "");
             strcat(msg_send, "214-The following commands are recognized:\r\n");
             strcat(msg_send, "   USER   PASS   QUIT   PASV   SYST   LIST   DELE   HELP\r\n");
-            strcat(msg_send, "   RETR   STOR   CWD    PWD\r\n");
+            strcat(msg_send, "   RETR   STOR   CWD    PWD    TYPE\r\n");
             strcat(msg_send, "214 Have a nice day.\r\n");
             error = 0;
         }
