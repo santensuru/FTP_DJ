@@ -356,8 +356,8 @@ int upload(char *name, int sockcli) {
     } while (buf_size > 0);*/
     
         //memset(msg, 0, sizeof(msg[4096]));
-        strcpy(msg, "Enter file after this: ....\r\n");
-        write(sockcli, msg, strlen(msg));
+        //strcpy(msg, "Enter file after this: ....\r\n");
+        //write(sockcli, msg, strlen(msg));
         
         //memset(msg, 0, sizeof(msg[4096]));
         
@@ -365,7 +365,7 @@ int upload(char *name, int sockcli) {
         do {
             fflush(stdin);
             /* binaries */
-            retval = read(sockcli, &buf[0], 1);
+            retval = read(sockcli, buf, 1);
             write(fd, &buf[0], retval);
             //printf("%d", retval);
             //buf[retval] = '\0';
@@ -466,7 +466,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.3a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.3b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
