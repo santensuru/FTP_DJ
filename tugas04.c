@@ -460,7 +460,7 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2d beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.2e beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -474,6 +474,13 @@ int main() {
             buf[retval] = '\0';
             strcat(msg, buf);
         } while (strstr(msg, "\r\n") == NULL);
+        
+        int i;
+        for (i=0; i<4; i++) {
+            if (msg[i] >= 'a' && msg[i] <= 'z') {
+                msg[i] = msg[i] - 'a' + 'A';
+            }
+        }
         
         //printf("%s", msg);
         
