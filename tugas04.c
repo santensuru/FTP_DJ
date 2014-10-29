@@ -17,8 +17,12 @@
 #include <pthread.h>
 #include <netinet/in.h>
 
+#define TRUE   1
+#define FALSE  0
+
 int len_root = 20;
 char dir_root[1024] = "/home/user/coba/FTP/";
+char dir_now[1024] = "/home/user/coba/FTP/";
 char dir_home[1024] = "/";
 
 int pre(char *ls) {
@@ -46,8 +50,10 @@ int pre(char *ls) {
         sscanf(ptr, "<DIRECTORY> %s", dir_root);
     }
     len_root = strlen(dir_root);
+    strcpy(dir_now, dir_root);
     
     printf("OK");
+    puts(dir_now);
     
     close(fd);
     return 3;
@@ -117,6 +123,7 @@ int list(int sockcli) { // char *ls
     char ls[512];
     //memset(ls, 0, sizeof(ls[4096]));
     /* Open the current directory. */
+    puts(dir_root);
 
     d = opendir (dir_root);
 
@@ -234,10 +241,41 @@ int dir(char *ls) {
     DIR * d;
     char temp[4096];
     
+    if (ls[0] == '/' && strlen(ls) == 1) {
+        strcpy(dir_root, dir_now);
+        strcpy(dir_home, "/");
+        return 3;
+    }
+    
+    else if (ls[0] == '/') {
+        strcpy(temp, dir_now);
+        //puts(temp);
+        temp[strlen(temp)-1] == '\0';
+        if (ls[strlen(ls)-1] != '/') {
+            ls[strlen(ls)] = '/';
+            ls[strlen(ls)] = '\0';
+        }
+        strcat(temp, ls);
+        
+        dir_home[strlen(dir_home)-1] = '\0';
+        strcpy(dir_home, ls);
+        puts(temp);
+        goto ll;
+    }
+    
+    //puts(ls);
+    
+    if (ls[0] != '/') {
+        char t[128];
+        strcpy(t, "/");
+        strcat(t, ls);
+        strcpy(ls, t);
+    }
+    
     strcpy(temp, dir_root);
     //printf("coba --> ");puts(temp);
     if (ls[strlen(ls)-1] != '/')
-    strcat(ls, "/");
+        strcat(ls, "/");
     int t = 0;
     
     while (1) {
@@ -294,6 +332,7 @@ int dir(char *ls) {
     
     //printf("coba --> ");puts(temp);
     
+    ll:
     /* Open the current directory. */
 
     d = opendir (temp);
@@ -323,7 +362,8 @@ int dir(char *ls) {
     }
     dir_home[i] = '\0';
     printf("%s", dir_root);
-    printf("\n%s\n", dir_home);
+    printf("\nhome: %s\n", dir_home);
+    //puts(dir_now);
 
     return 3;
 }
@@ -444,7 +484,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4b alpha\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -846,6 +886,9 @@ int main() {
     
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     
+    int opt=TRUE;        /* option is to be on/TRUE or off/FALSE */
+    setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(opt));
+    
     memset(&servaddr, 0, sizeof(servaddr));
     
     servaddr.sin_family = AF_INET;
@@ -869,6 +912,8 @@ int main() {
     //clisize_data = 0;
     
     // thread acc //
+    void *join;
+    
     pthread_t acc_t;
     int acc_i;
 	pthread_mutex_t acc_m = PTHREAD_MUTEX_INITIALIZER;
@@ -912,7 +957,7 @@ int main() {
 		
 		pthread_mutex_unlock( &acc_m );
 		
-		pthread_join(acc, NULL);
+		//pthread_join(acc_t, &join);
 	}
 	
 	close(sockfd);
