@@ -240,6 +240,21 @@ int dir(char *ls) {
     strcat(ls, "/");
     int t = 0;
     
+    while (1) {
+        puts(temp);
+        int z = strlen(temp) - 1;
+        if (temp[z] == '/') {
+            temp[z] = '\0';
+        }
+        else {
+            break;
+        }
+    }
+    
+    temp[strlen(temp)] = '/';
+    temp[strlen(temp)] = '\0';
+    puts(temp);
+    
     while (strstr(ls, "../")) {
         puts(ls);
         int i;
@@ -264,10 +279,16 @@ int dir(char *ls) {
     if (t == 0) {
         //puts(temp);
         //strcat(ls, "/");
+        if (ls[0] == '/') {
+            temp[strlen(temp)-1] = '\0';
+        }
         strcat(temp, ls);
     }
     else if (t == 2) {
         //puts(temp);
+        if (ls[0] == '/') {
+            temp[strlen(temp)-1] = '\0';
+        }
         strcat(temp, ls);
     }
     
@@ -423,7 +444,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -855,44 +876,44 @@ int main() {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     // end //
-     
+	
     while(sockcli = accept(sockfd, (struct sockaddr*)&cliaddr , &clisize)) {
-    
-    haha *handler = (haha *) malloc( sizeof ( haha ) );
-    printf("sockcli --> %d\n", sockcli);
-    printf("Ada klien masuk dari %s %d\n", inet_ntoa(cliaddr.sin_addr), (int) ntohs(cliaddr.sin_port));
-    
-    char str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(cliaddr.sin_addr), str, INET_ADDRSTRLEN);
-    printf("%s\n", str);
-    
-    struct sockaddr_in localAddress;
-    socklen_t addressLength = sizeof(localAddress);
-    getsockname(sockcli, (struct sockaddr*)&localAddress, &addressLength);
-    
-    char ip_active[16];
-    strcpy(ip_active, inet_ntoa( localAddress.sin_addr));
-    printf("local address: %s\n", ip_active);
-    printf("local port: %d\n", (int) ntohs(localAddress.sin_port));
-    
-    if (sockcli < 0) {
-        perror(strerror(errno));
-        exit(-1);
-    }
-    
-    // baca dan tulis pesan disini
-    
-    handler->sockcli = sockcli;
-    printf("%d\n", handler->sockcli);
-    strcpy(handler->ip_active, ip_active);
-    
-    pthread_mutex_lock( &acc_m );
-	acc_i = pthread_create( &acc_t, &attr, acc, (void *)handler);
-	
-	pthread_mutex_unlock( &acc_m );
-	
-	pthread_join(acc, NULL);
- }
+		
+	    haha *handler = (haha *) malloc( sizeof ( haha ) );
+	    printf("sockcli --> %d\n", sockcli);
+	    printf("Ada klien masuk dari %s %d\n", inet_ntoa(cliaddr.sin_addr), (int) ntohs(cliaddr.sin_port));
+	    
+	    char str[INET_ADDRSTRLEN];
+	    inet_ntop(AF_INET, &(cliaddr.sin_addr), str, INET_ADDRSTRLEN);
+	    printf("%s\n", str);
+	    
+	    struct sockaddr_in localAddress;
+	    socklen_t addressLength = sizeof(localAddress);
+	    getsockname(sockcli, (struct sockaddr*)&localAddress, &addressLength);
+	    
+	    char ip_active[16];
+	    strcpy(ip_active, inet_ntoa( localAddress.sin_addr));
+	    printf("local address: %s\n", ip_active);
+	    printf("local port: %d\n", (int) ntohs(localAddress.sin_port));
+ 	   
+	    if (sockcli < 0) {
+	        perror(strerror(errno));
+	        exit(-1);
+	    }
+	    
+	    // baca dan tulis pesan disini
+	    
+	    handler->sockcli = sockcli;
+	    printf("%d\n", handler->sockcli);
+	    strcpy(handler->ip_active, ip_active);
+    	
+	    pthread_mutex_lock( &acc_m );
+		acc_i = pthread_create( &acc_t, &attr, acc, (void *)handler);
+		
+		pthread_mutex_unlock( &acc_m );
+		
+		pthread_join(acc, NULL);
+	}
 	
 	close(sockfd);
 	
