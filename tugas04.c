@@ -387,64 +387,21 @@ int del(char *name) {
     return 3;
 }
 
-int main() {
-    int q = pre("FTP_DJ.xml");
-    if (q < 0) {
-        printf("FTP_DJ.xml Not Found or Not in same directory\n\n");
-        exit(-1);
-    }
-    
-    int sockfd = 0, sockfd_data = 0, sockcli = 0, sockcli_data = 0;
-    int retval = 0;
-    struct sockaddr_in servaddr, servaddr_data, cliaddr, cliaddr_data;
-    
-    sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    
-    memset(&servaddr, 0, sizeof(servaddr));
-    
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(6060);
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);   
-    
-    retval = bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    
-    if (retval <0) {
-        perror(strerror(errno));
-        exit(-1);
-    }
-    
-    printf("Server mengikat port 6060\n");
-    retval = listen(sockfd, 5);
-    printf("Server menunggu panggilan...\n");
-    
-    memset(&cliaddr, 0, sizeof(cliaddr));
-    memset(&cliaddr_data, 0, sizeof(cliaddr_data));
-    socklen_t clisize = sizeof(cliaddr), clisize_data = sizeof(cliaddr_data);
-    //clisize = 0;
-    //clisize_data = 0;
-     
-    sockcli = accept(sockfd, (struct sockaddr*)&cliaddr , &clisize);
-    
-    printf("Ada klien masuk dari %s %d\n", inet_ntoa(cliaddr.sin_addr), (int) ntohs(cliaddr.sin_port));
-    
-    char str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(cliaddr.sin_addr), str, INET_ADDRSTRLEN);
-    printf("%s\n", str);
-    
-    struct sockaddr_in localAddress;
-    socklen_t addressLength = sizeof(localAddress);
-    getsockname(sockcli, (struct sockaddr*)&localAddress, &addressLength);
+typedef struct haha {
+    int sockcli;
     char ip_active[16];
-    strcpy(ip_active, inet_ntoa( localAddress.sin_addr));
-    printf("local address: %s\n", ip_active);
-    printf("local port: %d\n", (int) ntohs(localAddress.sin_port));
+} haha;
+
+void *acc(void *ptr) {
+    haha * handler = (haha *)ptr;
     
-    if (sockcli < 0) {
-        perror(strerror(errno));
-        exit(-1);
-    }
+    printf("%d", handler->sockcli);
+    int sockfd_data = 0, sockcli_data = 0;
+    int retval = 0;
+    struct sockaddr_in servaddr_data, cliaddr_data;
     
-    // baca dan tulis pesan disini
+    memset(&cliaddr_data, 0, sizeof(cliaddr_data));
+    socklen_t clisize_data = sizeof(cliaddr_data);
     
     int flag = 1;
     int login = 0;
@@ -466,9 +423,9 @@ int main() {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.3b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
-    write(sockcli, msg_send, strlen(msg_send));
+    write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
     
     while (flag) {
@@ -476,7 +433,7 @@ int main() {
         memset(msg, 0, sizeof(msg[1024]));
         do {
             fflush(stdin);
-            retval = read(sockcli, buf, sizeof(buf)-1);
+            retval = read(handler->sockcli, buf, sizeof(buf)-1);
             buf[retval] = '\0';
             strcat(msg, buf);
         } while (strstr(msg, "\r\n") == NULL);
@@ -557,7 +514,7 @@ int main() {
                 port_i[1] = port_active%256;
                 
                 char ip_i[4][4];
-                sscanf(ip_active, "%[^.].%[^.].%[^.].%s", ip_i[0], ip_i[1], ip_i[2], ip_i[3]);
+                sscanf(handler->ip_active, "%[^.].%[^.].%[^.].%s", ip_i[0], ip_i[1], ip_i[2], ip_i[3]);
                 sprintf(msg_send, "200 Entering Passive Mode (%s,%s,%s,%s,%d,%d)\r\n", ip_i[0], ip_i[1], ip_i[2], ip_i[3], port_i[0], port_i[1]);
                 //retval = listen(sockfd_data, 5);
                 //sockcli_data = accept(sockfd_data, (struct sockaddr*)&cliaddr_data , &clisize_data);
@@ -651,7 +608,7 @@ int main() {
                 }
                 else {
                     sprintf(msg_send, "150 Connection accepted\r\n");
-                    write(sockcli, msg_send, strlen(msg_send));
+                    write(handler->sockcli, msg_send, strlen(msg_send));
                     fflush(stdout);
                     int s = download(comment, sockcli_data);
                     if (s < 0) {
@@ -696,7 +653,7 @@ int main() {
                 }
                 else {
                     sprintf(msg_send, "150 Connection accepted\r\n");
-                    write(sockcli, msg_send, strlen(msg_send));
+                    write(handler->sockcli, msg_send, strlen(msg_send));
                     fflush(stdout);
                     int s = upload(comment, sockcli_data);
                     if (s < 0) {
@@ -840,7 +797,7 @@ int main() {
             sprintf(msg_send, "500 Syntax error, command unrecognized.\r\n");
         }
 
-        write(sockcli, msg_send, strlen(msg_send));
+        write(handler->sockcli, msg_send, strlen(msg_send));
         fflush(stdout);
     }
     
@@ -850,9 +807,95 @@ int main() {
     printf("selesai kirim pesan\n");
     */
     
-    close(sockcli);
-    close(sockfd);
+    close(handler->sockcli);
+        
+    return;
+}
+
+int main() {
+    int q = pre("FTP_DJ.xml");
+    if (q < 0) {
+        printf("FTP_DJ.xml Not Found or Not in same directory\n\n");
+        exit(-1);
+    }
     
-    return 0;
+    int sockfd = 0, sockcli = 0;
+    int retval = 0;
+    struct sockaddr_in servaddr, cliaddr;
+    
+    sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    
+    memset(&servaddr, 0, sizeof(servaddr));
+    
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(6060);
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);   
+    
+    retval = bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    
+    if (retval <0) {
+        perror(strerror(errno));
+        exit(-1);
+    }
+    
+    printf("Server mengikat port 6060\n");
+    retval = listen(sockfd, 5);
+    printf("Server menunggu panggilan...\n");
+    
+    memset(&cliaddr, 0, sizeof(cliaddr));
+    socklen_t clisize = sizeof(cliaddr);
+    //clisize = 0;
+    //clisize_data = 0;
+    
+    // thread acc //
+    pthread_t acc_t;
+    int acc_i;
+	pthread_mutex_t acc_m = PTHREAD_MUTEX_INITIALIZER;
+    
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    // end //
+     
+    while(sockcli = accept(sockfd, (struct sockaddr*)&cliaddr , &clisize)) {
+    
+    haha *handler = (haha *) malloc( sizeof ( haha ) );
+    printf("sockcli --> %d\n", sockcli);
+    printf("Ada klien masuk dari %s %d\n", inet_ntoa(cliaddr.sin_addr), (int) ntohs(cliaddr.sin_port));
+    
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(cliaddr.sin_addr), str, INET_ADDRSTRLEN);
+    printf("%s\n", str);
+    
+    struct sockaddr_in localAddress;
+    socklen_t addressLength = sizeof(localAddress);
+    getsockname(sockcli, (struct sockaddr*)&localAddress, &addressLength);
+    
+    char ip_active[16];
+    strcpy(ip_active, inet_ntoa( localAddress.sin_addr));
+    printf("local address: %s\n", ip_active);
+    printf("local port: %d\n", (int) ntohs(localAddress.sin_port));
+    
+    if (sockcli < 0) {
+        perror(strerror(errno));
+        exit(-1);
+    }
+    
+    // baca dan tulis pesan disini
+    
+    handler->sockcli = sockcli;
+    printf("%d\n", handler->sockcli);
+    strcpy(handler->ip_active, ip_active);
+    
+    pthread_mutex_lock( &acc_m );
+	acc_i = pthread_create( &acc_t, &attr, acc, (void *)handler);
+	
+	pthread_mutex_unlock( &acc_m );
+	
+	pthread_join(acc, NULL);
+ }
+	
+	close(sockfd);
+	
+	return 0;
 }
  
