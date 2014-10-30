@@ -22,8 +22,8 @@
 
 int len_root = 20;
 char dir_root[1024] = "/home/user/coba/FTP/";
-char dir_now[1024] = "/home/user/coba/FTP/";
-char dir_home[1024] = "/";
+//char dir_now[1024] = "/home/user/coba/FTP/";
+//char dir_home[1024] = "/";
 
 int pre(char *ls) {
     int fd;
@@ -50,10 +50,10 @@ int pre(char *ls) {
         sscanf(ptr, "<DIRECTORY> %s", dir_root);
     }
     len_root = strlen(dir_root);
-    strcpy(dir_now, dir_root);
+    //strcpy(dir_now, dir_root);
     
     printf("OK");
-    puts(dir_now);
+    //puts(dir_now);
     
     close(fd);
     return 3;
@@ -117,15 +117,15 @@ void get_user(char *user, char *pass) {
     */
 }
 
-int list(int sockcli) { // char *ls
+int list(int sockcli, char *dir_now) { // char *ls
     DIR * d;
     //char * dir_name = "/home/user/coba/FTP/";
     char ls[512];
     //memset(ls, 0, sizeof(ls[4096]));
     /* Open the current directory. */
-    puts(dir_root);
+    puts(dir_now);
 
-    d = opendir (dir_root);
+    d = opendir (dir_now);
 
     if (! d) {
         //fprintf (stderr, "Cannot open directory '%s': %s\n",
@@ -155,7 +155,7 @@ int list(int sockcli) { // char *ls
         if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
         
-        strcpy(temp, dir_root);
+        strcpy(temp, dir_now);
         strcat(temp, entry->d_name);
         
         status =  stat(temp, &fileStat);
@@ -237,18 +237,18 @@ int list(int sockcli) { // char *ls
     return 3;
 }
 
-int dir(char *ls) {
+int dir(char *ls, char *dir_now, char *dir_home) {
     DIR * d;
     char temp[4096];
     
     if (ls[0] == '/' && strlen(ls) == 1) {
-        strcpy(dir_root, dir_now);
+        strcpy(dir_now, dir_root);
         strcpy(dir_home, "/");
         return 3;
     }
     
     else if (ls[0] == '/') {
-        strcpy(temp, dir_now);
+        strcpy(temp, dir_root);
         //puts(temp);
         temp[strlen(temp)-1] == '\0';
         if (ls[strlen(ls)-1] != '/') {
@@ -272,7 +272,7 @@ int dir(char *ls) {
         strcpy(ls, t);
     }
     
-    strcpy(temp, dir_root);
+    strcpy(temp, dir_now);
     //printf("coba --> ");puts(temp);
     if (ls[strlen(ls)-1] != '/')
         strcat(ls, "/");
@@ -352,27 +352,27 @@ int dir(char *ls) {
         return -1;
     }
     
-    memset(dir_root, 0, strlen(dir_root));
-    strcpy(dir_root, temp);
+    memset(dir_now, 0, strlen(dir_now));
+    strcpy(dir_now, temp);
     memset(dir_home, 0, strlen(dir_home));
     int i = len_root-1;
-    int l = strlen(dir_root);
+    int l = strlen(dir_now);
     for (i; i<l; i++) {
-        dir_home[i-len_root+1] = dir_root[i];
+        dir_home[i-len_root+1] = dir_now[i];
     }
     dir_home[i] = '\0';
-    printf("%s", dir_root);
+    printf("%s", dir_now);
     printf("\nhome: %s\n", dir_home);
     //puts(dir_now);
 
     return 3;
 }
 
-int download(char *name, int sockcli) {
+int download(char *name, int sockcli, char *dir_now) {
     int fd, buf_size;
     char buf[4096];
     char str_name[128];
-    strcpy(str_name, dir_root);
+    strcpy(str_name, dir_now);
     strcat(str_name, name);
     
     fd = open(str_name, O_RDONLY);
@@ -397,11 +397,11 @@ int download(char *name, int sockcli) {
     return 3;
 }
 
-int upload(char *name, int sockcli) {
+int upload(char *name, int sockcli, char *dir_now) {
     int fd, buf_size;
     char buf[1], msg[128];
     char str_name[128];
-    strcpy(str_name, dir_root);
+    strcpy(str_name, dir_now);
     strcat(str_name, name);
     
     fd = open(str_name, O_WRONLY | O_CREAT, S_IRWXU);
@@ -438,9 +438,9 @@ int upload(char *name, int sockcli) {
     return 3;
 }
 
-int del(char *name) {
+int del(char *name, char *dir_now) {
     char str_name[128];
-    strcpy(str_name, dir_root);
+    strcpy(str_name, dir_now);
     strcat(str_name, name);
     int s = remove(str_name);
     if (s < 0)
@@ -455,6 +455,10 @@ typedef struct haha {
 
 void *acc(void *ptr) {
     haha * handler = (haha *)ptr;
+    
+    char dir_now[1024] = "/home/user/coba/FTP/";
+    strcpy(dir_now, dir_root);
+    char dir_home[1024] = "/";
     
     printf("%d", handler->sockcli);
     int sockfd_data = 0, sockcli_data = 0;
@@ -484,7 +488,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4b alpha\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -624,7 +628,7 @@ void *acc(void *ptr) {
                 }
                 else {
                     sprintf(msg_send, "150 Connection accepted\r\n");
-                    int s = list(sockcli_data);
+                    int s = list(sockcli_data, dir_now);
                     if (s < 0) {
                         sprintf(msg_send, "451 The server had trouble reading the directory from disk.\r\n");
                     }
@@ -671,7 +675,7 @@ void *acc(void *ptr) {
                     sprintf(msg_send, "150 Connection accepted\r\n");
                     write(handler->sockcli, msg_send, strlen(msg_send));
                     fflush(stdout);
-                    int s = download(comment, sockcli_data);
+                    int s = download(comment, sockcli_data, dir_now);
                     if (s < 0) {
                         sprintf(msg_send, "551 The server had trouble reading the file from disk.\r\n");
                     }
@@ -716,7 +720,7 @@ void *acc(void *ptr) {
                     sprintf(msg_send, "150 Connection accepted\r\n");
                     write(handler->sockcli, msg_send, strlen(msg_send));
                     fflush(stdout);
-                    int s = upload(comment, sockcli_data);
+                    int s = upload(comment, sockcli_data, dir_now);
                     if (s < 0) {
                         sprintf(msg_send, "551 The server had trouble writing the file from disk.\r\n");
                     }
@@ -748,7 +752,7 @@ void *acc(void *ptr) {
             if (login && error == 0) {
                 sscanf(msg, "DELE %[^\r\n]", comment);
                 sprintf(msg_send, "");
-                int s = del(comment);
+                int s = del(comment, dir_now);
                 if (s < 0) {
                     sprintf(msg_send, "550 The server had trouble remove the file from disk.\r\n");
                 }
@@ -774,7 +778,7 @@ void *acc(void *ptr) {
             if (login && error == 0) {
                 sscanf(msg, "CWD %s", comment);
                 sprintf(msg_send, "");
-                int s = dir(comment);
+                int s = dir(comment, dir_now, dir_home);
                 if (s < 0) {
                     sprintf(msg_send, "550 CWD failed. \"%s\": directory not found.\r\n", comment);
                 }
