@@ -34,17 +34,17 @@ int pre(char *ls) {
         return -1;
     }
     
-    memset(msg, 0, sizeof(msg[4096]));
+    memset(msg, 0, strlen(msg));
     
     do {
         fflush(stdin);
-        int retval = read(fd, buf, sizeof(buf)-1);
+        int retval = read(fd, buf, 1);
         buf[retval] = '\0';
         strcat(msg, buf);
         //printf("%c", buf);
     } while (strstr(msg, "</SETTING>") == NULL);
     
-    memset(dir_root, 0, sizeof(dir_root[1024]));
+    memset(dir_root, 0, strlen(dir_root));
     
     if (ptr = strstr(msg, "<DIRECTORY>")) {
         sscanf(ptr, "<DIRECTORY> %s", dir_root);
@@ -85,7 +85,7 @@ void get_user(char *user, char *pass) {
     
     do {
         fflush(stdin);
-        int retval = read(fd, buf, sizeof(buf)-1);
+        int retval = read(fd, buf, 1);
         buf[retval] = '\0';
         strcat(msg, buf);
     } while (strstr(msg, "</USERS>") == NULL);
@@ -240,6 +240,10 @@ int list(int sockcli, char *dir_now) { // char *ls
 int dir(char *ls, char *dir_now, char *dir_home) {
     DIR * d;
     char temp[4096];
+    bzero(temp, 4096);
+    memset(dir_home, 0, strlen(dir_home));
+    
+    printf("ls: ");puts(ls);
     
     if (ls[0] == '/' && strlen(ls) == 1) {
         strcpy(dir_now, dir_root);
@@ -250,7 +254,9 @@ int dir(char *ls, char *dir_now, char *dir_home) {
     else if (ls[0] == '/') {
         strcpy(temp, dir_root);
         //puts(temp);
-        temp[strlen(temp)-1] == '\0';
+        if (temp[strlen(temp)-1] == '/') {
+            temp[strlen(temp)-1] = '\0';
+        }
         if (ls[strlen(ls)-1] != '/') {
             ls[strlen(ls)] = '/';
             ls[strlen(ls)] = '\0';
@@ -259,7 +265,7 @@ int dir(char *ls, char *dir_now, char *dir_home) {
         
         dir_home[strlen(dir_home)-1] = '\0';
         strcpy(dir_home, ls);
-        puts(temp);
+        //puts(temp);
         goto ll;
     }
     
@@ -474,6 +480,7 @@ void *acc(void *ptr) {
     int error = 0;
     
     char buf[2], msg[255], comment[255], pass[255], msg_send[4096], ack[5];
+    bzero(pass, 255);
     
     data_listen *baru = (data_listen *) malloc( sizeof ( data_listen ) );
     
@@ -488,19 +495,22 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4c beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
     
     while (flag) {
-        
-        memset(msg, 0, sizeof(msg[1024]));
+        //memset(msg, 0, strlen(msg));
+        bzero(msg, 255);
+        bzero(comment, 255);
+        bzero(msg_send, 4096);
         do {
             fflush(stdin);
-            retval = read(handler->sockcli, buf, sizeof(buf)-1);
+            retval = read(handler->sockcli, buf, 1);
             buf[retval] = '\0';
             strcat(msg, buf);
+            bzero(buf, 2);
         } while (strstr(msg, "\r\n") == NULL);
         
         int i;
