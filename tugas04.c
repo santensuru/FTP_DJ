@@ -476,6 +476,7 @@ int dir_del(char *ls, char *dir_now) {
 
 int exis(char *ls, char *dir_now) {
     char str_name[128];
+    bzero(ls, strlen(ls));
     strcpy(str_name, dir_now);
     strcat(str_name, ls);
     int s = access( str_name, F_OK );
@@ -494,6 +495,41 @@ int rn_to(char *to, char *ls, char *dir_now) {
     int s = rename(str_name_src, str_name_dst);
     if (s < 0)
         return -1;
+    return 3;
+}
+
+int size(char *ls, char *dir_now, char *to) {
+    char str_name[128];
+    strcpy(str_name, dir_now);
+    strcat(str_name, ls);
+    struct stat fileStat;
+    char buffer [33];
+    
+    int s =  stat(str_name, &fileStat);
+    if(s < 0) {
+        perror(strerror(errno));
+        return -1;
+    }
+    else {
+        bzero(to, strlen(to));
+        int i=0;
+        intmax_t temp_i = (intmax_t)fileStat.st_size;
+        //printf("%d\n", temp_i);
+        while (temp_i) {
+            to[i] = (temp_i % 10) + '0';
+            temp_i /= 10;
+            i++;
+        }
+        //puts(to);
+        int x = strlen(to);
+        char buf[1];
+        for (i=0; i<x/2; i++) {
+            buf[0] = to[i];
+            to[i] = to[x-i-1];
+            to[x-i-1] = buf[0];
+        }
+        //puts(to);
+    }
     return 3;
 }
 
@@ -538,7 +574,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -955,7 +991,7 @@ void *acc(void *ptr) {
         }
         
         else if (strstr(msg, "RNFR") != NULL) {
-            if (login && error == 0) {
+            if (login && error == 0 && port) {
                 sscanf(msg, "RNFR %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 int s = exis(comment, dir_now);
@@ -982,7 +1018,7 @@ void *acc(void *ptr) {
         }
         
         else if (strstr(msg, "RNTO") != NULL) {
-            if (login && error == 0) {
+            if (login && error == 0 && port) {
                 sscanf(msg, "RNTO %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 int s = rn_to(comment, pass, dir_now);
@@ -1007,12 +1043,46 @@ void *acc(void *ptr) {
             }
         }
         
+        else if (strstr(msg, "SIZE") != NULL) {
+            if (login && error == 0 && port) {
+                sscanf(msg, "SIZE %[^\r\n]", comment);
+                sprintf(msg_send, "");
+                int s = size(comment, dir_now, pass);
+                if (s < 0) {
+                    sprintf(msg_send, "550 File not found\r\n");
+                }
+                else{
+                    sprintf(msg_send, "213 %s\r\n", pass);
+                }
+                error = 0;
+            }
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
+        else if (strstr(msg, "FEAT") != NULL) {
+            sprintf(msg_send, "");
+            strcat(msg_send, "211-Features:\r\n");
+            strcat(msg_send, " SIZE\r\n");
+            strcat(msg_send, "211 End\r\n");
+            error = 0;
+        }
+        
         else if (strstr(msg, "HELP") != NULL) {
             sprintf(msg_send, "");
             strcat(msg_send, "214-The following commands are recognized:\r\n");
             strcat(msg_send, "\tUSER\tPASS\tQUIT\tPASV\tSYST\tLIST\tDELE\tHELP\r\n");
             strcat(msg_send, "\tRETR\tSTOR\tCWD\tPWD\tTYPE\tMKD\tRMD\tRNFR\r\n");
-            strcat(msg_send, "\tRNTO\r\n");
+            strcat(msg_send, "\tRNTO\tSIZE\tFEAT\r\n");
             strcat(msg_send, "214 Have a nice day.\r\n");
             error = 0;
         }
