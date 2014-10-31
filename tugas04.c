@@ -612,6 +612,10 @@ void *acc(void *ptr) {
     char buf[2], msg[255], comment[255], pass[255], msg_send[4096], ack[5];
     bzero(pass, 255);
     
+    char version[128], user[128];
+    strcpy(version, "0.0.5d beta");
+    strcpy(user, "anonymously");
+    
     data_listen *baru = (data_listen *) malloc( sizeof ( data_listen ) );
     
     // thread listen //
@@ -625,7 +629,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5c beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version %s\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r", version);
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -654,6 +658,7 @@ void *acc(void *ptr) {
         
         if (strstr(msg, "USER") != NULL) {
             sscanf(msg, "USER %s", comment);
+            strcpy(user, comment);
             get_user(comment, pass);
             //printf("331 Password required for %s\r\n", comment);
             sprintf(msg_send, "331 Password required for %s\r\n", comment);
@@ -669,10 +674,12 @@ void *acc(void *ptr) {
             }
             else if (error == 1) {
                 sprintf(msg_send, "530 Login or password incorrect!\r\n");
+                strcpy(user, "anonymously");
                 error++;
             }
             else {
                 sprintf(msg_send, "503 Bad sequence of command\r\n");
+                strcpy(user, "anonymously");
             }
         }
         
@@ -1171,12 +1178,60 @@ void *acc(void *ptr) {
             }
         }
         
+        else if (strstr(msg, "CDUP") != NULL) {
+            if (login && error == 0) {
+                strcpy(comment, "..");
+                sprintf(msg_send, "");
+                int s = dir(comment, dir_now, dir_home);
+                if (s < 0) {
+                    sprintf(msg_send, "550 CDUP Failed.\r\n");
+                }
+                else{
+                    sprintf(msg_send, "200 CDUP successful. \"%s\" is current directory.\r\n", dir_home);
+                }
+                error = 0;
+            }
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
+        else if (strstr(msg, "NOOP") != NULL) {
+            sprintf(msg_send, "");
+            strcat(msg_send, "200 OK\r\n");
+            error = 0;
+        }
+        
+        else if (strstr(msg, "STAT") != NULL) {
+            char temp[128];
+            sprintf(msg_send, "");
+            strcat(msg_send, "211-ftp.heaven.af.mil FTP server status:\r\n");
+            sprintf(temp, "   Version %s\r\n", version);
+            strcat(msg_send, temp);
+            sprintf(temp, "   Connected to heaven.af.mil (%s)\r\n", handler->ip_active);
+            strcat(msg_send, temp);
+            sprintf(temp, "   Logged in %s\r\n", user);
+            strcat(msg_send, temp);
+            strcat(msg_send, "   TYPE: ASCII, FORM: Nonprint; STRUcture: File; transfer MODE: Stream\r\n");
+            strcat(msg_send, "   No data connection\r\n");
+            strcat(msg_send, "211 End of status\r\n");
+            error = 0;
+        }
+        
         else if (strstr(msg, "HELP") != NULL) {
             sprintf(msg_send, "");
             strcat(msg_send, "214-The following commands are recognized:\r\n");
             strcat(msg_send, "   USER   PASS   QUIT   PASV   SYST   LIST   DELE   HELP\r\n");
             strcat(msg_send, "   RETR   STOR   CWD    PWD    TYPE   MKD    RMD    RNFR\r\n");
-            strcat(msg_send, "   RNTO   SIZE   FEAT   NLST\r\n");
+            strcat(msg_send, "   RNTO   SIZE   FEAT   NLST   CDUP   NOOP   STAT\r\n");
             strcat(msg_send, "214 Have a nice day.\r\n");
             error = 0;
         }
