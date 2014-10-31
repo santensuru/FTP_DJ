@@ -454,6 +454,49 @@ int del(char *name, char *dir_now) {
     return 3;
 }
 
+int dir_make(char *ls, char *dir_now) {
+    char str_name[128];
+    strcpy(str_name, dir_now);
+    strcat(str_name, ls);
+    int s = mkdir(str_name, 0755);
+    if (s < 0)
+        return -1;
+    return 3;
+}
+
+int dir_del(char *ls, char *dir_now) {
+    char str_name[128];
+    strcpy(str_name, dir_now);
+    strcat(str_name, ls);
+    int s = rmdir(str_name);
+    if (s < 0)
+        return -1;
+    return 3;
+}
+
+int exis(char *ls, char *dir_now) {
+    char str_name[128];
+    strcpy(str_name, dir_now);
+    strcat(str_name, ls);
+    int s = access( str_name, F_OK );
+    if (s < 0)
+        return -1;
+    return 3;
+}
+
+int rn_to(char *to, char *ls, char *dir_now) {
+    char str_name_src[128];
+    char str_name_dst[128];
+    strcpy(str_name_src, dir_now);
+    strcat(str_name_src, ls);
+    strcpy(str_name_dst, dir_root);
+    strcat(str_name_dst, to);
+    int s = rename(str_name_src, str_name_dst);
+    if (s < 0)
+        return -1;
+    return 3;
+}
+
 typedef struct haha {
     int sockcli;
     char ip_active[16];
@@ -495,7 +538,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.4c beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5 beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -786,7 +829,7 @@ void *acc(void *ptr) {
         
         else if (strstr(msg, "CWD") != NULL) {
             if (login && error == 0) {
-                sscanf(msg, "CWD %s", comment);
+                sscanf(msg, "CWD %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 int s = dir(comment, dir_now, dir_home);
                 if (s < 0) {
@@ -859,11 +902,117 @@ void *acc(void *ptr) {
             }
         }
         
+        else if (strstr(msg, "MKD") != NULL) {
+            if (login && error == 0) {
+                sscanf(msg, "MKD %[^\r\n]", comment);
+                sprintf(msg_send, "");
+                int s = dir_make(comment, dir_now);
+                if (s < 0) {
+                    sprintf(msg_send, "550 \"%s%s\" creation failed\r\n", dir_home, comment);
+                }
+                else{
+                    sprintf(msg_send, "257 \"%s%s\" create succesfully\r\n", dir_home, comment);
+                }
+                error = 0;
+            }
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
+        else if (strstr(msg, "RMD") != NULL) {
+            if (login && error == 0) {
+                sscanf(msg, "RMD %[^\r\n]", comment);
+                sprintf(msg_send, "");
+                int s = dir_del(comment, dir_now);
+                if (s < 0) {
+                    sprintf(msg_send, "550 Directory deleted failed\r\n");
+                }
+                else{
+                    sprintf(msg_send, "250 Directory deleted successfully\r\n");
+                }
+                error = 0;
+            }
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
+        else if (strstr(msg, "RNFR") != NULL) {
+            if (login && error == 0) {
+                sscanf(msg, "RNFR %[^\r\n]", comment);
+                sprintf(msg_send, "");
+                int s = exis(comment, dir_now);
+                if (s < 0) {
+                    sprintf(msg_send, "550 File doesn't exists\r\n");
+                }
+                else{
+                    sprintf(msg_send, "350 File exists, ready for destination name.\r\n");
+                    strcpy(pass, comment);
+                }
+                error = 0;
+            }
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
+        else if (strstr(msg, "RNTO") != NULL) {
+            if (login && error == 0) {
+                sscanf(msg, "RNTO %[^\r\n]", comment);
+                sprintf(msg_send, "");
+                int s = rn_to(comment, pass, dir_now);
+                if (s < 0) {
+                    sprintf(msg_send, "550 file can't renamed\r\n");
+                }
+                else{
+                    sprintf(msg_send, "250 file renamed successfully\r\n");
+                }
+                error = 0;
+            }
+            else if (login == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
         else if (strstr(msg, "HELP") != NULL) {
             sprintf(msg_send, "");
             strcat(msg_send, "214-The following commands are recognized:\r\n");
-            strcat(msg_send, "   USER   PASS   QUIT   PASV   SYST   LIST   DELE   HELP\r\n");
-            strcat(msg_send, "   RETR   STOR   CWD    PWD    TYPE\r\n");
+            strcat(msg_send, "\tUSER\tPASS\tQUIT\tPASV\tSYST\tLIST\tDELE\tHELP\r\n");
+            strcat(msg_send, "\tRETR\tSTOR\tCWD\tPWD\tTYPE\tMKD\tRMD\tRNFR\r\n");
+            strcat(msg_send, "\tRNTO\r\n");
             strcat(msg_send, "214 Have a nice day.\r\n");
             error = 0;
         }
