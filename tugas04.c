@@ -476,7 +476,6 @@ int dir_del(char *ls, char *dir_now) {
 
 int exis(char *ls, char *dir_now) {
     char str_name[128];
-    bzero(ls, strlen(ls));
     strcpy(str_name, dir_now);
     strcat(str_name, ls);
     int s = access( str_name, F_OK );
@@ -491,10 +490,15 @@ int rn_to(char *to, char *ls, char *dir_now) {
     strcpy(str_name_src, dir_now);
     strcat(str_name_src, ls);
     strcpy(str_name_dst, dir_root);
+    str_name_dst[len_root-1] = '\0';
     strcat(str_name_dst, to);
     int s = rename(str_name_src, str_name_dst);
-    if (s < 0)
+    //puts(str_name_src);
+    //puts(str_name_dst);
+    if (s < 0) {
+        //perror(strerror(errno));
         return -1;
+    }
     return 3;
 }
 
@@ -574,7 +578,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5a beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -991,7 +995,7 @@ void *acc(void *ptr) {
         }
         
         else if (strstr(msg, "RNFR") != NULL) {
-            if (login && error == 0 && port) {
+            if (login && error == 0) {
                 sscanf(msg, "RNFR %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 int s = exis(comment, dir_now);
@@ -1018,7 +1022,7 @@ void *acc(void *ptr) {
         }
         
         else if (strstr(msg, "RNTO") != NULL) {
-            if (login && error == 0 && port) {
+            if (login && error == 0) {
                 sscanf(msg, "RNTO %[^\r\n]", comment);
                 sprintf(msg_send, "");
                 int s = rn_to(comment, pass, dir_now);
