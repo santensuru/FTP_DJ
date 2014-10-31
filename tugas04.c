@@ -237,6 +237,53 @@ int list(int sockcli, char *dir_now) { // char *ls
     return 3;
 }
 
+int n_list(int sockcli, char *dir_now) { // char *ls
+    DIR * d;
+    //char * dir_name = "/home/user/coba/FTP/";
+    char ls[512];
+    //memset(ls, 0, sizeof(ls[4096]));
+    /* Open the current directory. */
+    puts(dir_now);
+
+    d = opendir (dir_now);
+
+    if (! d) {
+        //fprintf (stderr, "Cannot open directory '%s': %s\n",
+        //         dir_name, strerror (errno));
+        //exit (EXIT_FAILURE);
+        return -1;
+    }
+    while (1) {
+        struct dirent * entry;
+        
+        strcpy(ls, "");
+        
+        entry = readdir (d);
+        if (! entry) {
+            break;
+        }
+        
+        if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+        
+        strcat(ls, entry->d_name);
+        strcat(ls, "\r\n");
+        
+        // send to recivier
+        write(sockcli, ls, strlen(ls));
+    }
+    
+    /* Close the directory. */
+    if (closedir (d)) {
+        //fprintf (stderr, "Could not close '%s': %s\n",
+        //         dir_name, strerror (errno));
+        //exit (EXIT_FAILURE);
+        return -1;
+    }
+
+    return 3;
+}
+
 int dir(char *ls, char *dir_now, char *dir_home) {
     DIR * d;
     char temp[4096];
@@ -578,7 +625,7 @@ void *acc(void *ptr) {
     pthread_attr_init(&attr);
     // end //
     
-    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5b beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
+    sprintf(msg_send, "220-FTP_DJ Server version 0.0.5c beta\n\r220-written by Djuned Fernando Djusdek (djuned.ong@gmail.com)\n\r220 Please visit https://github.com/santensuru/FTP_DJ\n\r");
     //printf("%s", msg_send);
     write(handler->sockcli, msg_send, strlen(msg_send));
     fflush(stdout);
@@ -1081,12 +1128,55 @@ void *acc(void *ptr) {
             error = 0;
         }
         
+        else if (strstr(msg, "NLST") != NULL) {
+            if (login && error == 0 && port) {
+                sprintf(msg_send, "");
+                //retval = listen(sockfd_data, 5);
+                //sockcli_data = accept(sockfd_data, (struct sockaddr*)&cliaddr_data , &clisize_data);
+                pthread_join(data_t, &status);
+            	sockcli_data = (int*)status;
+        		//printf("%d\n", (sockcli_data));
+                if (sockcli_data < 0) {
+                    sprintf(msg_send, "425 Can't open data connection\r\n");
+                    error++;
+                }
+                else {
+                    sprintf(msg_send, "150 Connection accepted\r\n");
+                    int s = n_list(sockcli_data, dir_now);
+                    if (s < 0) {
+                        sprintf(msg_send, "451 The server had trouble reading the directory from disk.\r\n");
+                    }
+                    else if (s == 3) {
+                        strcat(msg_send, "226 Transfer OK.\r\n");
+                    }
+                    error = 0;
+                }
+                shutdown(sockcli_data, SHUT_WR);
+                port = 0;
+                //printf("%s", read(sockcli_data, ack, sizeof(ack)));
+                //if (strstr(ack, "OK") != NULL) {
+                    //close(sockcli_data);
+                //}
+            }
+            else if (port == 0 && error == 0) {
+                sprintf(msg_send, "530 Please log in with USER and PASS first.\r\n");
+                error+=2;
+            }
+            else if (error == 1) {
+                sprintf(msg_send, "501 Syntax error\r\n");
+                error++;
+            }
+            else {
+                sprintf(msg_send, "503 Bad sequence of command\r\n");
+            }
+        }
+        
         else if (strstr(msg, "HELP") != NULL) {
             sprintf(msg_send, "");
             strcat(msg_send, "214-The following commands are recognized:\r\n");
-            strcat(msg_send, "\tUSER\tPASS\tQUIT\tPASV\tSYST\tLIST\tDELE\tHELP\r\n");
-            strcat(msg_send, "\tRETR\tSTOR\tCWD\tPWD\tTYPE\tMKD\tRMD\tRNFR\r\n");
-            strcat(msg_send, "\tRNTO\tSIZE\tFEAT\r\n");
+            strcat(msg_send, "   USER   PASS   QUIT   PASV   SYST   LIST   DELE   HELP\r\n");
+            strcat(msg_send, "   RETR   STOR   CWD    PWD    TYPE   MKD    RMD    RNFR\r\n");
+            strcat(msg_send, "   RNTO   SIZE   FEAT   NLST\r\n");
             strcat(msg_send, "214 Have a nice day.\r\n");
             error = 0;
         }
