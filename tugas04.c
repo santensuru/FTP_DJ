@@ -452,12 +452,13 @@ int download(char *name, int sockcli, char *dir_now) {
 
 int upload(char *name, int sockcli, char *dir_now) {
     int fd, buf_size;
-    char buf[1], msg[128];
+    //char buf[1], msg[128];
+    char new_buf[4096];
     char str_name[128];
     strcpy(str_name, dir_now);
     strcat(str_name, name);
     
-    fd = open(str_name, O_WRONLY | O_CREAT, S_IRWXU);
+    fd = open(str_name, O_WRONLY | O_CREAT, 0755);
     
     if (fd < 0)
         return -1;
@@ -479,8 +480,8 @@ int upload(char *name, int sockcli, char *dir_now) {
         do {
             fflush(stdin);
             /* binaries */
-            retval = read(sockcli, buf, 1);
-            write(fd, &buf[0], retval);
+            retval = read(sockcli, new_buf, 4096);
+            write(fd, &new_buf[0], retval);
             //printf("%d", retval);
             //buf[retval] = '\0';
             //memcpy((void *)&msg[0], (const void *)&buf[0], retval); //strcat(msg, buf);
@@ -613,7 +614,7 @@ void *acc(void *ptr) {
     bzero(pass, 255);
     
     char version[128], user[128];
-    strcpy(version, "0.0.5e beta");
+    strcpy(version, "0.0.5f beta");
     strcpy(user, "anonymously");
     
     data_listen *baru = (data_listen *) malloc( sizeof ( data_listen ) );
