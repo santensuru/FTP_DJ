@@ -613,7 +613,7 @@ void *acc(void *ptr) {
     bzero(pass, 255);
     
     char version[128], user[128];
-    strcpy(version, "0.0.5d beta");
+    strcpy(version, "0.0.5e beta");
     strcpy(user, "anonymously");
     
     data_listen *baru = (data_listen *) malloc( sizeof ( data_listen ) );
@@ -1227,12 +1227,27 @@ void *acc(void *ptr) {
         }
         
         else if (strstr(msg, "HELP") != NULL) {
+            sscanf(msg, "HELP %s", comment);
+            for (i=0; i<4; i++) {
+                if (comment[i] >= 'a' && comment[i] <= 'z') {
+                    comment[i] = comment[i] - 'a' + 'A';
+                }
+            }
+            //puts(comment);
             sprintf(msg_send, "");
             strcat(msg_send, "214-The following commands are recognized:\r\n");
             strcat(msg_send, "   USER   PASS   QUIT   PASV   SYST   LIST   DELE   HELP\r\n");
             strcat(msg_send, "   RETR   STOR   CWD    PWD    TYPE   MKD    RMD    RNFR\r\n");
             strcat(msg_send, "   RNTO   SIZE   FEAT   NLST   CDUP   NOOP   STAT\r\n");
             strcat(msg_send, "214 Have a nice day.\r\n");
+            if (strcmp(comment, "") != 0 ) {
+                if (strstr(msg_send, comment) != NULL) {
+                    sprintf(msg_send, "214 Command %s is supported by FTP_DJ\r\n", comment);
+                }
+                else {
+                    sprintf(msg_send, "502 Command %s is not recognized or supported by FTP_DJ\r\n", comment);
+                }
+            }
             error = 0;
         }
         
