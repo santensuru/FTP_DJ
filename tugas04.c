@@ -537,9 +537,16 @@ int rn_to(char *to, char *ls, char *dir_now) {
     char str_name_dst[128];
     strcpy(str_name_src, dir_now);
     strcat(str_name_src, ls);
-    strcpy(str_name_dst, dir_root);
-    str_name_dst[len_root-1] = '\0';
-    strcat(str_name_dst, to);
+    if (to[0] == '/') {
+        strcpy(str_name_dst, dir_root);
+        str_name_dst[len_root-1] = '\0';
+        strcat(str_name_dst, to);
+    }
+    /* rename se folder */
+    else {
+        strcpy(str_name_dst, dir_now);
+        strcat(str_name_dst, to);
+    }
     int s = rename(str_name_src, str_name_dst);
     //puts(str_name_src);
     //puts(str_name_dst);
@@ -614,7 +621,7 @@ void *acc(void *ptr) {
     bzero(pass, 255);
     
     char version[128], user[128];
-    strcpy(version, "0.0.5f beta");
+    strcpy(version, "0.0.5g beta");
     strcpy(user, "anonymously");
     
     data_listen *baru = (data_listen *) malloc( sizeof ( data_listen ) );
