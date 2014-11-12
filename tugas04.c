@@ -290,6 +290,14 @@ int dir(char *ls, char *dir_now, char *dir_home) {
     bzero(temp, 4096);
     memset(dir_home, 0, strlen(dir_home));
     
+    while (strncmp(ls, "/../", 4) == 0) {
+        int i, l = strlen(ls);
+        for (i=0; i<l-3; i++) {
+            ls[i] = ls[i+3];
+        }
+        ls[i] = '\0';
+    }
+    
     printf("ls: ");puts(ls);
     
     if (ls[0] == '/' && strlen(ls) == 1) {
@@ -621,7 +629,7 @@ void *acc(void *ptr) {
     bzero(pass, 255);
     
     char version[128], user[128];
-    strcpy(version, "0.0.5g beta");
+    strcpy(version, "0.0.5h beta");
     strcpy(user, "anonymously");
     
     data_listen *baru = (data_listen *) malloc( sizeof ( data_listen ) );
